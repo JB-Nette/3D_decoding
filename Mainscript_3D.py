@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from itertools import groupby
 import os
 import timeit
-from frequencyFilter import butter2d
+from frequencyFilter import butter2d, butter3d
 
 root = tk.Tk()
 root.withdraw()
@@ -29,14 +29,15 @@ if not os.path.exists(output_path):
 
 n_stack = 17
 n_channel = 3
-channels_to_analyse = 0 # 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
-analyse_mode = '3D' #plane-by-plane or 3D
-z_plane = [8] #for plane by plane only (which z to analyse)
+channels_to_analyse = 2 # 0 is highest wavelength (cy7), 1 is lower, 2 is lowest wavelength
+analyse_mode = 'plane-by-plane' #plane-by-plane or 3D
+z_plane = [6] #for plane by plane only (which z to analyse)
 z_range = list(range(6,13)) #for 3D only
-filter_param = [100,None] #[low cut, high cut]
+filter_param = [350, 900] #[low cut, high cut]
 threshold_mode = 'rel' #rel or abs
-threshold = 0.2 #0-1 for rel and any number for abs
-dpi=200 #resolution for save image
+threshold = 0.4 #0-1 for rel and any number for abs
+dpi=200 #resolution for save image #1000 is enough for high res
+color = 'm.' #'b.', 'g.', 'r.', 'c.', 'm.'
 
 
 def check_channels_and_z(image_files, n_stack, n_channel, z, chan):
@@ -78,9 +79,9 @@ def find_peak_local_max(image_arr, thres, thres_mode):
         Return: coordinates (z,x,y) or (x,y) of peaks
     """
     if thres_mode == 'rel':
-        coordinates = peak_local_max(image_arr, min_distance=3, threshold_rel=thres)
+        coordinates = peak_local_max(image_arr, min_distance=1, threshold_rel=thres)
     if thres_mode == 'abs':
-        coordinates = peak_local_max(image_arr, min_distance=3, threshold_abs=thres)
+        coordinates = peak_local_max(image_arr, min_distance=1, threshold_abs=thres)
     return coordinates
 
 def plot_spot_in_3D(image3D, coor_list, output_path, dpi):
@@ -100,6 +101,34 @@ def plot_spot_in_3D(image3D, coor_list, output_path, dpi):
         plt.imshow(image3D[z, :], cmap=plt.cm.gray)
         plt.plot(coor_same_z[:,2], coor_same_z[:,1], 'r.')
         plt.savefig(save_path + '/' + 'spot_num' + '_3D_at_z_' + str(z) + '.jpg', dpi=dpi)
+
+def plot_spot_in_3D_filter(image3D, filter_img, coor_list, output_path, dpi):
+    """ Params: image3D (3D arr): image (z,x,y)
+                coor_list : list of coordinates that we want to plot
+                coor_num : number of coordinates that we want to plot
+        Return: plot image
+    """
+    z_list = np.unique(coor_list[:, 0])
+    save_path = os.path.join(output_path, 'spots at every z')
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    for z in z_list:
+        coor_same_z = coor_list[coor_list[:, 0] == z]
+        fig, axes = plt.subplots(1, 3, figsize=(8, 3), sharex=True, sharey=True)
+        axes[0].imshow(filter_img[z,:], cmap=plt.cm.gray)
+        axes[0].axis('off')
+        axes[0].set_title('Filtered Image')
+        axes[1].imshow(image3D[z, :], cmap=plt.cm.gray)
+        axes[1].axis('off')
+        axes[1].set_title('Raw Image')
+        axes[2].imshow(image3D[z, :], cmap=plt.cm.gray)
+        axes[2].axis('off')
+        axes[2].set_title('Spot coordinate at z' +str(z))
+        axes[2].plot(coor_same_z[:,2], coor_same_z[:,1], color)
+        plt.show()
+        plt.savefig(output_path + '/' + filename + "channels_" + str(channels_to_analyse) + "at_z_" + str(
+            z) + '_3D_spots.png', dpi=dpi)
+
 
 def plot_z_notin2D(image3D, MIPimage, coor_list, output_path):
     """ Params: image3D (3D arr): image (z,x,y)
@@ -130,6 +159,14 @@ def plot_z_notin2D(image3D, MIPimage, coor_list, output_path):
         #plt.show()
         plt.savefig(save_path + '/' + 'spots not in 2D at z' + str(z) + '.tif')
 
+def filter_func_3D(filter_param, img_arr):
+    freq_filter = butter3d(low_cut=filter_param[0], high_cut=filter_param[1],  # filter_path=os.path.join(data_path, "filters"),
+                           order=2, zdim=img_arr.shape[0], xdim=img_arr.shape[1], ydim=img_arr.shape[2])
+    filter_shifted = np.fft.fftshift(freq_filter)
+    img_fourier = np.fft.fftn(img_arr)
+    filtered_img = np.fft.ifftn(img_fourier * filter_shifted)
+    return filtered_img.real
+
 def filter_func(filter_param, img_arr):
     freq_filter = butter2d(low_cut=filter_param[0], high_cut=filter_param[1],  # filter_path=os.path.join(data_path, "filters"),
                            order=2, xdim=img_arr.shape[0], ydim=img_arr.shape[1])
@@ -137,7 +174,6 @@ def filter_func(filter_param, img_arr):
     img_fourier = np.fft.fftn(img_arr)
     filtered_img = np.fft.ifftn(img_fourier * filter_shifted)
     return filtered_img.real
-
 
 if analyse_mode == 'plane-by-plane':
     for image_file in image_files_list:
@@ -156,10 +192,10 @@ if analyse_mode == 'plane-by-plane':
             axes[1].imshow(image_arr,cmap=plt.cm.gray)
             axes[1].axis('off')
             axes[1].set_title('Raw Image')
-            axes[2].imshow(image_arr, cmap=plt.cm.jet)
+            axes[2].imshow(image_arr, cmap=plt.cm.gray)
             axes[2].axis('off')
             axes[2].set_title('Spot coordinate')
-            axes[2].plot(gene_coordinates[:, 1], gene_coordinates[:, 0], 'r.')
+            axes[2].plot(gene_coordinates[:, 1], gene_coordinates[:, 0], color)
             plt.show()
             plt.savefig(output_path + '/' + filename + "channels_" + str(channels_to_analyse) + "at_z_" + str(z_num) + '_plane-by-plne_spots.png')
 
@@ -167,7 +203,7 @@ if analyse_mode == 'plane-by-plane':
             plt.imshow(image_arr,cmap=plt.cm.gray)
             plt.axis('off')
             plt.title('Spot coordinate of genes')
-            plt.plot(gene_coordinates[:, 1], gene_coordinates[:, 0], 'r.')
+            plt.plot(gene_coordinates[:, 1], gene_coordinates[:, 0], color)
             plt.savefig(output_path + '/' + filename + "channels_" + str(channels_to_analyse) + "at_z_" + str(z_num) + '_plane-by-plne_spots_2.png', dpi=dpi)
 
 if analyse_mode == '3D':
@@ -175,33 +211,14 @@ if analyse_mode == '3D':
         filename = (image_file.split("\\")[-1]).split(".")[0]
         print("image_file..", filename)
         _, image_arr_3D = check_channels_and_z(image_file, n_stack, n_channel, 0, channels_to_analyse)
-        image_arr_3D_select = image_arr_3D[channels_to_analyse,3:15,:]
+        image_arr_3D_select = image_arr_3D[channels_to_analyse,z_range,:]
         image_norm = norm_image_func(image_arr_3D_select)
-        #filter_image = filter_func(filter_param, image_arr)
-        gene_coordinates_3D = find_peak_local_max(image_norm, threshold, threshold_mode)
+        filter_image = filter_func_3D(filter_param, image_arr_3D_select)
+        gene_coordinates_3D = find_peak_local_max(filter_image, threshold, threshold_mode)
         sort_z_plane_from_3D_coor = gene_coordinates_3D[gene_coordinates_3D[:, 0].argsort()]  # sort coor by z
         plot_spot_in_3D(image_arr_3D_select, sort_z_plane_from_3D_coor, output_path, dpi)
-        # fig, axes = plt.subplots(1, 3, figsize=(8, 3), sharex=True, sharey=True)
-        # axes[0].imshow(np.asarray(filter_image).reshape(image_arr.shape[1],image_arr.shape[1]), cmap=plt.cm.gray)
-        # axes[0].axis('off')
-        # axes[0].set_title('Filtered Image')
-        # axes[1].imshow(image_arr,cmap=plt.cm.gray)
-        # axes[1].axis('off')
-        # axes[1].set_title('Raw Image')
-        # axes[2].imshow(image_arr, cmap=plt.cm.jet)
-        # axes[2].axis('off')
-        # axes[2].set_title('Spot coordinate')
-        # axes[2].plot(gene_coordinates[:, 1], gene_coordinates[:, 0], 'r.')
-        # plt.show()
-        # plt.savefig(output_path + '/' + filename + "channels_" + str(channels_to_analyse) + "at_z_" + str(z_num) + '_plane-by-plne_spots.png')
-        #
-        # plt.figure()
-        # plt.imshow(image_arr,cmap=plt.cm.gray)
-        # plt.axis('off')
-        # plt.title('Spot coordinate of genes')
-        # plt.plot(gene_coordinates[:, 1], gene_coordinates[:, 0], 'r.')
-        # plt.savefig(output_path + '/' + filename + "channels_" + str(channels_to_analyse) + "at_z_" + str(z_num) + '_plane-by-plne_spots_2.png')
-# #stack_images(image, list_3D, output_path)
+        plot_spot_in_3D_filter(image_arr_3D_select, filter_image, sort_z_plane_from_3D_coor, output_path, dpi)
+
 # # save spot
 # df = pd.DataFrame(coordinates)
 # df.to_csv(output_path + Main_name + "savespot_localmax_MIP.csv")
