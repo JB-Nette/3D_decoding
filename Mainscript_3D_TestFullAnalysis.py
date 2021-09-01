@@ -2,19 +2,15 @@ import os
 import glob
 import tkinter as tk
 from tkinter import filedialog, simpledialog
-#import pandas as pd
 from tifffile import imread, imsave
-import plotly.express as ex
 import numpy as np
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 from skimage.feature import peak_local_max
 import matplotlib.pyplot as plt
-#import pandas as pd
-from itertools import groupby
 import os
 import timeit
 from frequencyFilter import butter2d, butter3d
+import pandas as pd
+from Create_spotHDF5 import CreateH5py
 
 root = tk.Tk()
 root.withdraw()
@@ -24,8 +20,13 @@ root.destroy()
 start_time = timeit.default_timer()
 image_files_list = glob.glob(data_path + '/*.tif')
 output_path = os.path.join(data_path,"output_" + str(start_time))
+smFish_fpkm_file = os.path.join(data_path,"FPKM_file.tsv")
+if not os.path.exists(smFish_fpkm_file):
+    print("Cannot find gene name file")
 if not os.path.exists(output_path):
     os.makedirs(output_path)
+df_fpkm = pd.read_csv(smFish_fpkm_file, header=None, sep="\t", usecols=[0, 1], names=['genes','FPKM'])
+
 
 n_stack = 75
 n_channel = 3
@@ -47,10 +48,10 @@ def check_channels_and_z(image_files, n_stack, n_channel, z, chan):
     print("reading file from", image_files)
     print("tiff image has shape", tiff_img.shape)
 
-    # assert tiff_img.ndim == 4, (
-    #     f"tiff file:\n{image_files}\n "
-    #     f"has {tiff_img.ndim} dimensions. Should be 4.\n"
-    # )
+    assert tiff_img.ndim == 4, (
+        f"tiff file:\n{image_files}\n "
+        f"has {tiff_img.ndim} dimensions. Should be 4.\n"
+    )
     if tiff_img.shape[0] > tiff_img.shape[1]:
         tiff_img_new = np.moveaxis(tiff_img, [0, 1, 2, 3], [2, 3, 0, 1])
         tiff_img_new = tiff_img_new.reshape(x_dim, y_dim, n_stack*n_channel)
@@ -220,6 +221,11 @@ if analyse_mode == '3D':
         plot_spot_in_3D(image_arr_3D_select, sort_z_plane_from_3D_coor, output_path, dpi)
         plot_spot_in_3D_filter(image_arr_3D_select, filter_image, sort_z_plane_from_3D_coor, output_path, dpi)
 
+
+coords_file_path = "C:/Users/Nette/Desktop/FOV_00_coord_iter2.hdf5"
+coor_dict = {}
+coor_dict["gene1"] = sort_z_plane_from_3D_coor
+CreateH5py(df_fpkm, coords_file_path, coor_dict)
 # # save spot
 # df = pd.DataFrame(coordinates)
 # df.to_csv(output_path + Main_name + "savespot_localmax_MIP.csv")
