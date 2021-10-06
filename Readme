@@ -37,3 +37,7 @@ dpi : resolution for saved image
 example: dpi =200
 
 methods: choose between '3D' or 'planebyplane' ** now recomend 3D **
+
+Output are
+1. Individual z plane with the detected spots
+2. All z plane with the detected spots

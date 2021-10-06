@@ -102,9 +102,9 @@ def find_peak_local_max(image_arr, thres, thres_mode):
         Return: coordinates (z,x,y) or (x,y) of peaks
     """
     if thres_mode == 'rel':
-        coordinates = peak_local_max(image_arr, min_distance=1, threshold_rel=thres)
+        coordinates = peak_local_max(image_arr, min_distance=2, threshold_rel=thres)
     if thres_mode == 'abs':
-        coordinates = peak_local_max(image_arr, min_distance=1, threshold_abs=thres)
+        coordinates = peak_local_max(image_arr, min_distance=2, threshold_abs=thres)
     return coordinates
 
 def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, dpi, alpha =0.4):
