@@ -24,16 +24,15 @@ output_path = os.path.join(data_path,"output_" + str(start_time))
 if not os.path.exists(output_path):
     os.makedirs(output_path)
 
-hyb_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/hyb00_series5.tif"
-dapi_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/DAPI_series5.tif"
+hyb_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/hyb00_series12.tif"
+dapi_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/DAPI_series12.tif"
 n_stack = 9 # total of z stack in hyb image
 n_channel = 4 # total of z stack in hyb image
-n_stack_dapi = 9 # total of z stack in DAPI image
-n_channel_dapi = 2 #total of z stack in dapi image
-channels_to_analyse = 0 # refer to gene, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
-alpha = 0.4 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
-z_range = list(range(6,13)) #what z do you want to showfor 3D only
-filter_param = [100,None] #[low cut, high cut]
+dapi_channel_number = 1 # the number of channel that dapi located is 1
+channels_to_analyse = 2 # refer to gene, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
+alpha = 0.5 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
+z_choose_list = list(range(3,6)) #what z do you want to show for 3D only # minimum is 2 z
+filter_param = [100,None] #[low cut, high cut] # we does not use this for 3D
 threshold_mode = 'rel' #rel (relative value) or abs (absolute value)
 threshold = 0.2 #0-1 for rel and any number for abs
 dpi=200 #resolution for save image
@@ -103,9 +102,9 @@ def find_peak_local_max(image_arr, thres, thres_mode):
         Return: coordinates (z,x,y) or (x,y) of peaks
     """
     if thres_mode == 'rel':
-        coordinates = peak_local_max(image_arr, min_distance=3, threshold_rel=thres)
+        coordinates = peak_local_max(image_arr, min_distance=1, threshold_rel=thres)
     if thres_mode == 'abs':
-        coordinates = peak_local_max(image_arr, min_distance=3, threshold_abs=thres)
+        coordinates = peak_local_max(image_arr, min_distance=1, threshold_abs=thres)
     return coordinates
 
 def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, dpi, alpha =0.4):
@@ -124,10 +123,10 @@ def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, d
         coor_same_z = coor_list[coor_list[:, 0] == z]
         fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=True)
         axes = axes.ravel()
-        axes[0].imshow(image3D[z, :])
+        axes[0].imshow(norm_image_func(image3D[z, :]),vmax=0.4)
         axes[0].axis('off')
         axes[0].set_title('Hyb image at z ='+ str(z))
-        axes[1].imshow(norm_image_func(image3D_dapi[z, :]), cmap='Purples', vmax=np.percentile(norm_image_func(image3D_dapi[z, :]),99.8))
+        axes[1].imshow(norm_image_func(image3D_dapi[z, :]), cmap='Purples', vmax=np.percentile(norm_image_func(image3D_dapi[z, :]),99.95))
         axes[1].set_title('Dapi image at z =' + str(z))
         axes[1].axis('off')
         axes[2].imshow(norm_image_func(image3D[z, :]),vmax=0.4)
@@ -136,6 +135,7 @@ def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, d
         axes[2].axis('off')
         axes[3].imshow(norm_image_func(image3D[z, :]), vmax=0.4)
         axes[3].set_title('Hyb with spot coordinates at z ='+ str(z))
+        axes[3].plot(coor_same_z[:, 2], coor_same_z[:, 1], 'r.')
         axes[3].axis('off')
         axes[4].imshow(norm_image_func(image3D[z, :]), vmax=0.4)
         axes[4].imshow(norm_image_func(image3D_dapi[z,:]), cmap='Purples', alpha=alpha)
@@ -149,6 +149,25 @@ def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, d
         axes[5].axis('off')
         plt.show()
         plt.savefig(save_path + '/' + 'spot_num' + '_3D_at_z_' + str(z) + '.jpg', dpi=dpi)
+
+    fig, axes = plt.subplots(3, len(z_list), figsize=(10,10), sharex=True, sharey=True)
+    print(z_list)
+    for i, z in enumerate(z_list):
+        register_dapi, _ = register_slice(image3D[z, :], image3D_dapi[z, :])
+        print(image3D_dapi.shape)
+        coor_same_z = coor_list[coor_list[:, 0] == z]
+        axes[0,i].imshow(norm_image_func(register_dapi), cmap='Purples')
+        axes[0, i].axis('off')
+        axes[0, i].set_title('Registered DAPI at z=' + str(z))
+        axes[1, i].imshow(norm_image_func(image3D[z, :]), vmax=0.3, cmap ='gray')
+        axes[1, i].plot(coor_same_z[:, 2], coor_same_z[:, 1], 'r.')
+        axes[1, i].set_title('Hyb at z=' + str(z))
+        axes[1, i].axis('off')
+        axes[2,i].imshow(norm_image_func(image3D[z, :]), vmax=0.3)
+        axes[2,i].imshow(norm_image_func(register_dapi), cmap='Purples', alpha=alpha)
+        axes[2,i].plot(coor_same_z[:, 2], coor_same_z[:, 1], 'r.')
+        axes[2,i].set_title('At z=' + str(z))
+        axes[2,i].axis('off')
 
 def plot_spot_in_3D(image3D, coor_list, output_path, dpi):
     """ Params: image3D (3D arr): image (z,x,y)
@@ -218,8 +237,7 @@ def register_slice(ref_slice, current_slice, shifts=None):
     return registered_slice.real, shifts
 
 
-dapi_image_arr, _ = check_channels_and_output_multiplez(dapi_image_file, n_stack_dapi, n_channel_dapi)
-dapi_image_arr = dapi_image_arr[channels_to_analyse ,:,:]
+dapi_image_arr = imread(dapi_image_file)[:, dapi_channel_number ,:,:] #dapi images seem correct
 hyb_image_arr, _ = check_channels_and_output_multiplez(hyb_image_file, n_stack, n_channel)
 hyb_image_arr = hyb_image_arr[channels_to_analyse,:,:]
 if methods == 'planebyplane':
@@ -250,13 +268,23 @@ if methods == 'planebyplane':
         axes[3].axis('off')
         plt.show()
 
+
+data_index_list = []
 if methods == '3D':
     #register_hyb_img, _ = register_slice(dapi_image_arr_zth, hyb_image_arr_zth)
     image_norm = norm_image_func(hyb_image_arr)
     gene_coordinates_3D = find_peak_local_max(image_norm, threshold, threshold_mode)
     sort_z_plane_from_3D_coor = gene_coordinates_3D[gene_coordinates_3D[:, 0].argsort()]  # sort coor by z
-    image_arr_3D_select = hyb_image_arr
-    plot_spot_in_3D_overlaydapi(image_arr_3D_select, dapi_image_arr, sort_z_plane_from_3D_coor, output_path, dpi, alpha)
+    all_z_list = np.unique(sort_z_plane_from_3D_coor[:, 0])
+    for z in z_choose_list:
+        if z in all_z_list:
+            print(z)
+            data_index = [i for i, x in enumerate(sort_z_plane_from_3D_coor[:, 0] == z) if x]
+            data_index_list = data_index_list + data_index
+            print(len(data_index_list))
+    sort_z_plane_from_3D_coor = sort_z_plane_from_3D_coor[data_index_list]
+    plot_spot_in_3D_overlaydapi(hyb_image_arr, dapi_image_arr, sort_z_plane_from_3D_coor, output_path, dpi, alpha)
+
     # save spot
     df = pd.DataFrame(sort_z_plane_from_3D_coor )
     df = df.set_axis([ 'z', 'y', 'x'], axis=1, inplace=False)
