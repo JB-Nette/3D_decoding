@@ -4,10 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, simpledialog
 #import pandas as pd
 from tifffile import imread, imsave
-import plotly.express as ex
 import numpy as np
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 from skimage.feature import peak_local_max
 import matplotlib.pyplot as plt
 #import pandas as pd
