@@ -9,7 +9,7 @@ from skimage.feature import peak_local_max
 import matplotlib.pyplot as plt
 import os
 import timeit
-from frequencyFilter import butter2d
+from frequencyFilter import butter2d, butter3d
 from utils import register_translation
 from scipy import ndimage
 
@@ -31,7 +31,7 @@ n_channel = 4 # total of z stack in hyb image
 dapi_channel_number = 1 # the number of channel that dapi located is 1
 channels_to_analyse = 2 # refer to gene, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
 alpha = 0.5 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
-z_choose_list = list(range(3,6)) #what z do you want to show for 3D only # minimum is 2 z
+z_choose_list = list(range(4,6)) #what z do you want to show for 3D only # minimum is 2 z
 filter_param = [100,None] #[low cut, high cut] # we does not use this for 3D
 threshold_mode = 'rel' #rel (relative value) or abs (absolute value)
 threshold = 0.1 #0-1 for rel and any number for abs
@@ -224,6 +224,14 @@ def filter_func(filter_param, img_arr):
     filtered_img = np.fft.ifftn(img_fourier * filter_shifted)
     return filtered_img.real
 
+def filter_func_3D(filter_param, img_arr):
+    freq_filter = butter3d(low_cut=filter_param[0], high_cut=filter_param[1],  # filter_path=os.path.join(data_path, "filters"),
+                           order=2, zdim=img_arr.shape[0], xdim=img_arr.shape[1], ydim=img_arr.shape[2])
+    filter_shifted = np.fft.fftshift(freq_filter)
+    img_fourier = np.fft.fftn(img_arr)
+    filtered_img = np.fft.ifftn(img_fourier * filter_shifted)
+    return filtered_img.real
+
 def register_slice(ref_slice, current_slice, shifts=None):
     ref_slice_fourier = np.fft.fftn(ref_slice)
     current_slice_fourier = np.fft.fftn(current_slice)
@@ -271,9 +279,9 @@ if methods == 'planebyplane':
 
 data_index_list = []
 if methods == '3D':
-    #register_hyb_img, _ = register_slice(dapi_image_arr_zth, hyb_image_arr_zth)
     image_norm = norm_image_func(hyb_image_arr)
-    gene_coordinates_3D = find_peak_local_max(image_norm, threshold, threshold_mode)
+    filter_image = filter_func_3D(filter_param, image_norm)
+    gene_coordinates_3D = find_peak_local_max(filter_image, threshold, threshold_mode)
     sort_z_plane_from_3D_coor = gene_coordinates_3D[gene_coordinates_3D[:, 0].argsort()]  # sort coor by z
     all_z_list = np.unique(sort_z_plane_from_3D_coor[:, 0])
     for z in z_choose_list:
