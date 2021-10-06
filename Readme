@@ -1,0 +1,34 @@
+hyb_image_file : location of hyb image (one image with multiple z and multiple channels)
+dapi_image_file : location of dapi image (one image with multiple z and multiple channels)
+example:
+hyb_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/hyb00_series12.tif"
+dapi_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/DAPI_series12.tif"
+
+n_stack: total of z stack in hyb image
+n_channel: total of z stack in hyb image
+This two params is to check the order of channel and stack which in ELS system mess them up
+
+dapi_channel_number: the number of channel that dapi located, here is 1
+channels_to_analyse: refer to gene in smFISH, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
+example:
+0 is cy7, 1 is cy5, 2 is AF594, and 3 is cy3
+
+z_choose_list: what z do you want to show for 3D analysis ** minimum is 2 z **
+example: list(range(3,6)) -> it will show z = 3,4,5
+
+alpha: is opacity, 0 is transparent, 1 is opaque. This is used to adjust nicely to show the overlay image of dapi and hyb
+example: alpha = 0.5
+
+
+filter_param :[low cut, high cut] **we does not use this for 3D**
+example: [100,None] #[low cut, high cut] # we does not use this for 3D
+
+threshold_mode : the theshold mode to find the spot. choose between rel (relative value) or abs (absolute value)
+exmaple: threshold_mode = 'rel'
+
+threshold : threshold cutoff of spots (between 0 to 1)
+
+dpi : resolution for saved image
+example: dpi =200
+
+methods: choose between '3D' or 'planebyplane' ** now recomend 3D **

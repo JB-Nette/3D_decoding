@@ -34,7 +34,7 @@ alpha = 0.5 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
 z_choose_list = list(range(3,6)) #what z do you want to show for 3D only # minimum is 2 z
 filter_param = [100,None] #[low cut, high cut] # we does not use this for 3D
 threshold_mode = 'rel' #rel (relative value) or abs (absolute value)
-threshold = 0.2 #0-1 for rel and any number for abs
+threshold = 0.1 #0-1 for rel and any number for abs
 dpi=200 #resolution for save image
 
 methods = '3D' # planebyplane or 3D
@@ -123,7 +123,7 @@ def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, d
         coor_same_z = coor_list[coor_list[:, 0] == z]
         fig, axes = plt.subplots(2, 3, figsize=(10, 10), sharex=True, sharey=True)
         axes = axes.ravel()
-        axes[0].imshow(norm_image_func(image3D[z, :]),vmax=0.4)
+        axes[0].imshow(norm_image_func(image3D[z, :]),vmax=0.4,cmap ='gray')
         axes[0].axis('off')
         axes[0].set_title('Hyb image at z ='+ str(z))
         axes[1].imshow(norm_image_func(image3D_dapi[z, :]), cmap='Purples', vmax=np.percentile(norm_image_func(image3D_dapi[z, :]),99.95))
@@ -133,7 +133,7 @@ def plot_spot_in_3D_overlaydapi(image3D, image3D_dapi, coor_list, output_path, d
         axes[2].imshow(norm_image_func(image3D_dapi[z,:]), cmap='Purples',alpha=alpha)
         axes[2].set_title('Hyb with Dapi image at z ='+ str(z))
         axes[2].axis('off')
-        axes[3].imshow(norm_image_func(image3D[z, :]), vmax=0.4)
+        axes[3].imshow(norm_image_func(image3D[z, :]), vmax=0.4,cmap ='gray')
         axes[3].set_title('Hyb with spot coordinates at z ='+ str(z))
         axes[3].plot(coor_same_z[:, 2], coor_same_z[:, 1], 'r.')
         axes[3].axis('off')
