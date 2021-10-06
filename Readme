@@ -1,3 +1,5 @@
+This is for Mainscript_3D_CRC.py
+
 hyb_image_file : location of hyb image (one image with multiple z and multiple channels)
 dapi_image_file : location of dapi image (one image with multiple z and multiple channels)
 example:
