@@ -28,6 +28,8 @@ hyb_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/hyb00_series12.t
 dapi_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/DAPI_series12.tif"
 n_stack = 9 # total of z stack in hyb image
 n_channel = 4 # total of z stack in hyb image
+n_stack_dapi = 9
+n_channel_dapi = 3 
 dapi_channel_number = 1 # the number of channel that dapi located is 1
 channels_to_analyse = 2 # refer to gene, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
 alpha = 0.5 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
@@ -244,8 +246,8 @@ def register_slice(ref_slice, current_slice, shifts=None):
     registered_slice = np.fft.ifftn(ndimage.fourier_shift(current_slice_fourier, shifts))
     return registered_slice.real, shifts
 
-
-dapi_image_arr = imread(dapi_image_file)[:, dapi_channel_number ,:,:] #dapi images seem correct
+dapi_image_arr, _ = check_channels_and_output_multiplez(dapi_image_file, n_stack_dapi, n_channel_dapi) 
+dapi_image_arr = dapi_image_arr[:, dapi_channel_number ,:,:] 
 hyb_image_arr, _ = check_channels_and_output_multiplez(hyb_image_file, n_stack, n_channel)
 hyb_image_arr = hyb_image_arr[channels_to_analyse,:,:]
 if methods == 'planebyplane':
