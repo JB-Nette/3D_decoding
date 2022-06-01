@@ -13,23 +13,25 @@ from frequencyFilter import butter2d, butter3d
 from utils import register_translation
 from scipy import ndimage
 
-root = tk.Tk()
-root.withdraw()
-data_path = filedialog.askdirectory(title="Please select data directory")
-root.destroy()
+# root = tk.Tk()
+# root.withdraw()
+# data_path = filedialog.askdirectory(title="Please select data directory")
+# root.destroy()
+#
+# start_time = timeit.default_timer()
+# image_files_list = glob.glob(data_path + '/*.tif')
+# output_path = os.path.join(data_path,"output_" + str(start_time))
+# if not os.path.exists(output_path):
+#     os.makedirs(output_path)
 
-start_time = timeit.default_timer()
-image_files_list = glob.glob(data_path + '/*.tif')
-output_path = os.path.join(data_path,"output_" + str(start_time))
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-
-hyb_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/hyb00_series12.tif"
-dapi_image_file = "C:/Users/Nette/Desktop/3D_gaussian/hyb_00_CRC/DAPI_series12.tif"
-n_stack = 9 # total of z stack in hyb image
-n_channel = 4 # total of z stack in hyb image
-n_stack_dapi = 9
-n_channel_dapi = 3 
+hyb_image_file = "C:/Users/synbio/Downloads/3D_seg/sevengene.tif"
+dapi_image_file = "C:/Users/synbio/Downloads/3D_seg/dapi_membrane.tif"
+img_hyb = imread(hyb_image_file)
+img_dapi = imread(dapi_image_file)
+n_stack = img_hyb.shape[0] # total of z stack in hyb image
+n_gene = img_hyb.shape[1] # total of z stack in hyb image
+n_stack_dapi = img_dapi.shape[0] # total of z stack in dapi image
+n_channel_dapi = img_dapi.shape[1]
 dapi_channel_number = 1 # the number of channel that dapi located is 1
 channels_to_analyse = 2 # refer to gene, 0 is highest wavelength, 1 is lower, 2 is lowest wavelength
 alpha = 0.5 # 0 is transparent, 1 is  to show the overlay image of dapi and hyb
